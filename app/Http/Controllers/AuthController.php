@@ -121,7 +121,7 @@ public function login(Request $request)
         ], 401);
     }
 
-    // $user = auth()->user();
+    $user = auth()->user();
     $token = $user->createToken($user->role)->plainTextToken;
 
     return response()->json([

@@ -55,48 +55,41 @@ public function ambil(request $request){
 
 
     //
-    Public function register(request $request){
+  public function register(Request $request) {
+  $data = $request->all();
+  $validator = Validator::make($data, [
+  'name' => 'required|string|max:255',
+  'email' => 'required|email|unique:users,email',
+  'password' => 'required|string|min:6',
+  'role' => 'required|in:user,admin,driver', // Role harus ditentukan
+  'phone' => 'required|numeric',
+  ]);
 
-$user = new User;
-$data = $request->all();
-$validator = Validator::make($data, [
-'name' => 'required|string|max:255',
-'email' => 'required|email|unique:users,email',
-'password' => 'required|string|min:6',
-'role' => 'required|in:user,admin,driver', // kalau role sudah ditentukan
-'phone' => 'required|numeric',
-]);
+  if ($validator->fails()) {
+  return response()->json([
+  'message' => 'Validasi gagal',
+  'errors' => $validator->errors(),
+  ], 422);
+  }
 
-if ($validator->fails()) {
-return response()->json([
-'message' => 'Validasi gagal',
-'errors' => $validator->errors(),
-], 422);
+  // Generate ID user
+  $data['id_user'] = 'USR' . time() . mt_rand(10, 99);
+  $data['password'] = Hash::make($data['password']); // ✅ Hash password sebelum menyimpan
 
-    }
-    $data['id_user'] = 'USR' . time() . mt_rand(10, 99);
-    // contoh: USR171069624510
-    $data['password'] = bcrypt($data['password']);
+  // Simpan user
+  $user = new User();
+  $user->fill($data);
+  $user->save();
 
-$user->fill($data);
-$user = User::where('email', $request->email)->first();
+  // Buat token
+  $token = $user->createToken('auth_token')->plainTextToken;
 
-if (!$user) {
-return response()->json(['message' => 'User not found'], 404);
-}
-
-$token = $user->createToken('auth_token')->plainTextToken;
-
-return response()->json([
-'message' => 'Register berhasil',
-'data' => $data,
-'token' => $token
-]);
-
-
-
-
-}
+  return response()->json([
+  'message' => 'Register berhasil',
+  'data' => $user,
+  'token' => $token
+  ]);
+  }
 
 
 public function login(Request $request)
@@ -123,14 +116,13 @@ public function login(Request $request)
         ], 401);
     }
 
-    $user = auth()->user();
-    $token = $user->createToken($user->role)->plainTextToken;
+$token = $user->createToken($user->role)->plainTextToken;
 
-    return response()->json([
-        'message' => 'Login berhasil',
-        'data' => $user,
-        'token' => $token
-    ]);
+return response()->json([
+'message' => 'Login berhasil',
+'data' => $user,
+'token' => $token
+]);
 
 // return "berahasil";
 

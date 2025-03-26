@@ -65,7 +65,6 @@ $validator = Validator::make($data, [
 'password' => 'required|string|min:6',
 'role' => 'required|in:user,admin,driver', // kalau role sudah ditentukan
 'phone' => 'required|numeric',
-'id_user' => 'required|unique:users,id_user',
 ]);
 
 if ($validator->fails()) {
@@ -80,10 +79,13 @@ return response()->json([
     $data['password'] = bcrypt($data['password']);
 
 $user->fill($data);
-$user->save();
+$user = User::where('email', $request->email)->first();
 
-$token = $user->createToken($data['role'])->plainTextToken;
+if (!$user) {
+return response()->json(['message' => 'User not found'], 404);
+}
 
+$token = $user->createToken('auth_token')->plainTextToken;
 
 return response()->json([
 'message' => 'Register berhasil',
